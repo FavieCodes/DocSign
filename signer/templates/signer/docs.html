@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DocSign API Explorer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+    <style>
+        :root {
+            --bg-base: #0f172a;
+            --bg-surface: #1e293b;
+            --bg-card: rgba(30, 41, 59, 0.7);
+            --border: rgba(255, 255, 255, 0.1);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --primary: #0ea5e9;
+            --method-get: #10b981;
+            --method-post: #3b82f6;
+            --method-delete: #ef4444;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 3rem 1.5rem;
+        }
+
+        header {
+            margin-bottom: 3rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #0ea5e9, #3b82f6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .back-link {
+            color: var(--text-muted);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: color 0.2s;
+        }
+
+        .back-link:hover {
+            color: var(--text-main);
+        }
+
+        .endpoint-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+            backdrop-filter: blur(10px);
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .endpoint-header {
+            padding: 1.2rem 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            cursor: pointer;
+            user-select: none;
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .endpoint-header:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .method-badge {
+            font-weight: 700;
+            font-size: 0.85rem;
+            padding: 0.3rem 0.8rem;
+            border-radius: 6px;
+            text-transform: uppercase;
+        }
+
+        .method-get { background: rgba(16, 185, 129, 0.15); color: var(--method-get); border: 1px solid rgba(16, 185, 129, 0.3); }
+        .method-post { background: rgba(59, 130, 246, 0.15); color: var(--method-post); border: 1px solid rgba(59, 130, 246, 0.3); }
+        .method-delete { background: rgba(239, 68, 68, 0.15); color: var(--method-delete); border: 1px solid rgba(239, 68, 68, 0.3); }
+
+        .endpoint-path {
+            font-family: 'Fira Code', monospace;
+            font-size: 1rem;
+            flex-grow: 1;
+            color: var(--text-main);
+        }
+
+        .endpoint-desc {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .endpoint-body {
+            padding: 1.5rem;
+            border-top: 1px solid var(--border);
+            display: none;
+        }
+
+        .endpoint-card.active .endpoint-body {
+            display: block;
+        }
+
+        .input-group {
+            margin-bottom: 1rem;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        input[type="text"], input[type="file"], textarea {
+            width: 100%;
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            color: var(--text-main);
+            font-family: 'Fira Code', monospace;
+            font-size: 0.9rem;
+            transition: border-color 0.2s;
+        }
+
+        input[type="text"]:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: background 0.2s;
+        }
+
+        .btn:hover {
+            background: #0284c7;
+        }
+
+        .response-container {
+            margin-top: 1.5rem;
+            border-radius: 8px;
+            overflow: hidden;
+            display: none;
+        }
+
+        .response-header {
+            background: rgba(15, 23, 42, 0.8);
+            padding: 0.75rem 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid var(--border);
+            border-bottom: none;
+            border-radius: 8px 8px 0 0;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .status-code {
+            font-weight: 700;
+            font-family: 'Fira Code', monospace;
+        }
+        .status-200, .status-201, .status-204 { color: var(--method-get); }
+        .status-400, .status-401, .status-403, .status-404 { color: #eab308; }
+        .status-500 { color: var(--method-delete); }
+
+        pre {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border);
+            border-radius: 0 0 8px 8px;
+            padding: 1.5rem;
+            overflow-x: auto;
+            color: #a78bfa;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.9rem;
+            margin: 0;
+        }
+
+        /* CSRF Token Setup */
+        .csrf-token {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- CSRF Token injected by Django -->
+    <div class="csrf-token" id="csrfToken">{% csrf_token %}</div>
+
+    <div class="container">
+        <header>
+            <h1><i class="ti ti-api-app"></i> API Explorer</h1>
+            <a href="{% url 'index' %}" class="back-link"><i class="ti ti-arrow-left"></i> Back to Dashboard</a>
+        </header>
+
+        <!-- GET /api/documents/ -->
+        <div class="endpoint-card">
+            <div class="endpoint-header" onclick="toggleEndpoint(this)">
+                <span class="method-badge method-get">GET</span>
+                <span class="endpoint-path">/api/documents/</span>
+                <span class="endpoint-desc">List all documents</span>
+            </div>
+            <div class="endpoint-body">
+                <p style="color: var(--text-muted); margin-bottom: 1.5rem; font-size: 0.95rem;">Retrieves a list of all documents belonging to the authenticated user.</p>
+                <button class="btn" onclick="executeRequest('GET', '/api/documents/', null, 'res-list')">
+                    <i class="ti ti-player-play"></i> Send Request
+                </button>
+                <div class="response-container" id="res-list">
+                    <div class="response-header">
+                        <span>Response Body</span>
+                        <span class="status-code"></span>
+                    </div>
+                    <pre class="response-body"></pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- POST /api/documents/upload/ -->
+        <div class="endpoint-card">
+            <div class="endpoint-header" onclick="toggleEndpoint(this)">
+                <span class="method-badge method-post">POST</span>
+                <span class="endpoint-path">/api/documents/upload/</span>
+                <span class="endpoint-desc">Upload a new document</span>
+            </div>
+            <div class="endpoint-body">
+                <p style="color: var(--text-muted); margin-bottom: 1.5rem; font-size: 0.95rem;">Uploads a new original PDF or image file.</p>
+                <form id="uploadForm" onsubmit="event.preventDefault(); executeMultipart('POST', '/api/documents/upload/', 'uploadForm', 'res-upload')">
+                    <div class="input-group">
+                        <label>File (multipart/form-data)</label>
+                        <input type="file" name="file" required accept="application/pdf,image/png,image/jpeg,image/jpg">
+                    </div>
+                    <button type="submit" class="btn">
+                        <i class="ti ti-player-play"></i> Send Request
+                    </button>
+                </form>
+                <div class="response-container" id="res-upload">
+                    <div class="response-header">
+                        <span>Response Body</span>
+                        <span class="status-code"></span>
+                    </div>
+                    <pre class="response-body"></pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- POST /api/documents/{doc_id}/save/ -->
+        <div class="endpoint-card">
+            <div class="endpoint-header" onclick="toggleEndpoint(this)">
+                <span class="method-badge method-post">POST</span>
+                <span class="endpoint-path">/api/documents/{doc_id}/save/</span>
+                <span class="endpoint-desc">Save signed document</span>
+            </div>
+            <div class="endpoint-body">
+                <p style="color: var(--text-muted); margin-bottom: 1.5rem; font-size: 0.95rem;">Saves the base64 signed image overlay for a specific document.</p>
+                <div class="input-group">
+                    <label>doc_id (UUID)</label>
+                    <input type="text" id="save-doc-id" placeholder="e.g. 550e8400-e29b-41d4-a716-446655440000">
+                </div>
+                <div class="input-group">
+                    <label>JSON Body</label>
+                    <textarea id="save-body">{"image": "data:image/png;base64,iVBORw0KGgo..."}</textarea>
+                </div>
+                <button class="btn" onclick="executeJson('POST', '/api/documents/' + document.getElementById('save-doc-id').value + '/save/', document.getElementById('save-body').value, 'res-save')">
+                    <i class="ti ti-player-play"></i> Send Request
+                </button>
+                <div class="response-container" id="res-save">
+                    <div class="response-header">
+                        <span>Response Body</span>
+                        <span class="status-code"></span>
+                    </div>
+                    <pre class="response-body"></pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- DELETE /api/documents/{doc_id}/delete/ -->
+        <div class="endpoint-card">
+            <div class="endpoint-header" onclick="toggleEndpoint(this)">
+                <span class="method-badge method-delete">DELETE</span>
+                <span class="endpoint-path">/api/documents/{doc_id}/delete/</span>
+                <span class="endpoint-desc">Delete a document</span>
+            </div>
+            <div class="endpoint-body">
+                <p style="color: var(--text-muted); margin-bottom: 1.5rem; font-size: 0.95rem;">Permanently deletes a document and its associated files.</p>
+                <div class="input-group">
+                    <label>doc_id (UUID)</label>
+                    <input type="text" id="delete-doc-id" placeholder="e.g. 550e8400-e29b-41d4-a716-446655440000">
+                </div>
+                <button class="btn" onclick="executeRequest('DELETE', '/api/documents/' + document.getElementById('delete-doc-id').value + '/delete/', null, 'res-delete')">
+                    <i class="ti ti-player-play"></i> Send Request
+                </button>
+                <div class="response-container" id="res-delete">
+                    <div class="response-header">
+                        <span>Response Body</span>
+                        <span class="status-code"></span>
+                    </div>
+                    <pre class="response-body"></pre>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        function toggleEndpoint(el) {
+            el.parentElement.classList.toggle('active');
+        }
+
+        function getCsrfToken() {
+            return document.querySelector('#csrfToken input[name="csrfmiddlewaretoken"]').value;
+        }
+
+        function displayResponse(resId, status, data) {
+            const container = document.getElementById(resId);
+            container.style.display = 'block';
+            
+            const statusEl = container.querySelector('.status-code');
+            statusEl.textContent = `Status: ${status}`;
+            statusEl.className = 'status-code'; // reset
+            if (status >= 200 && status < 300) statusEl.classList.add('status-200');
+            else if (status >= 400 && status < 500) statusEl.classList.add('status-400');
+            else statusEl.classList.add('status-500');
+
+            container.querySelector('.response-body').textContent = JSON.stringify(data, null, 2);
+        }
+
+        async function executeRequest(method, url, body, resId) {
+            if (url.includes('{doc_id}') || url.endsWith('//') || url.endsWith('/delete/')) {
+                // very basic validation if empty doc id
+                if (url.includes('//')) return alert('Please enter a valid doc_id');
+            }
+
+            const headers = {
+                'Accept': 'application/json'
+            };
+
+            if (method !== 'GET') {
+                headers['X-CSRFToken'] = getCsrfToken();
+            }
+
+            try {
+                const response = await fetch(url, { method, headers, body });
+                let data;
+                try {
+                    data = await response.json();
+                } catch(e) {
+                    data = { error: "Could not parse JSON response" };
+                }
+                displayResponse(resId, response.status, data);
+            } catch (err) {
+                displayResponse(resId, 'Error', { error: err.message });
+            }
+        }
+
+        async function executeJson(method, url, jsonString, resId) {
+            if (url.includes('//')) return alert('Please enter a valid doc_id');
+            
+            const headers = {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCsrfToken()
+            };
+
+            try {
+                const response = await fetch(url, { method, headers, body: jsonString });
+                const data = await response.json();
+                displayResponse(resId, response.status, data);
+            } catch (err) {
+                displayResponse(resId, 'Error', { error: err.message });
+            }
+        }
+
+        async function executeMultipart(method, url, formId, resId) {
+            const form = document.getElementById(formId);
+            const formData = new FormData(form);
+            
+            const headers = {
+                'Accept': 'application/json',
+                'X-CSRFToken': getCsrfToken()
+            };
+
+            try {
+                const response = await fetch(url, { method, headers, body: formData });
+                const data = await response.json();
+                displayResponse(resId, response.status, data);
+            } catch (err) {
+                displayResponse(resId, 'Error', { error: err.message });
+            }
+        }
+    </script>
+</body>
+</html>

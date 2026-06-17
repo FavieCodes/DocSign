@@ -1,0 +1,25 @@
+{
+  "builds": [
+    {
+      "src": "docsign/wsgi.py",
+      "use": "@vercel/python"
+    },
+    {
+      "src": "build.sh",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "staticfiles"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/static/(.*)",
+      "dest": "/staticfiles/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "docsign/wsgi.py"
+    }
+  ]
+}

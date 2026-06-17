@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DocSign — Free Document Signer</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg-primary: #ffffff;
+    --bg-secondary: #f5f5f4;
+    --bg-tertiary: #e8e8e5;
+    --text-primary: #1a1a1a;
+    --text-secondary: #6b7280;
+    --border: rgba(0,0,0,0.12);
+    --border-md: rgba(0,0,0,0.22);
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg-primary: #1c1c1e;
+      --bg-secondary: #2c2c2e;
+      --bg-tertiary: #3a3a3c;
+      --text-primary: #f5f5f5;
+      --text-secondary: #9ca3af;
+      --border: rgba(255,255,255,0.12);
+      --border-md: rgba(255,255,255,0.22);
+    }
+  }
+  body { font-family: var(--font); background: var(--bg-tertiary); color: var(--text-primary); min-height: 100vh; }
+  #app { display: flex; flex-direction: column; min-height: 100vh; max-width: 1200px; margin: 0 auto; background: var(--bg-primary); box-shadow: 0 0 0 0.5px var(--border); }
+
+  /* Topbar */
+  .topbar { display: flex; align-items: center; gap: 10px; padding: 12px 20px; border-bottom: 0.5px solid var(--border); }
+  .topbar h1 { font-size: 16px; font-weight: 500; flex: 1; }
+
+  /* Tabs */
+  .tab-bar { display: flex; border-bottom: 0.5px solid var(--border); background: var(--bg-secondary); }
+  .tab { padding: 10px 24px; font-size: 14px; cursor: pointer; color: var(--text-secondary); border-bottom: 2px solid transparent; background: none; border-top: none; border-left: none; border-right: none; font-family: var(--font); transition: color 0.15s; }
+  .tab.active { color: var(--text-primary); border-bottom-color: var(--text-primary); font-weight: 500; }
+
+  /* Panels */
+  .panel { display: none; flex: 1; }
+  .panel.active { display: flex; flex-direction: column; }
+
+  /* Editor layout */
+  #editor-panel.active { flex-direction: column; }
+  .editor-body { display: flex; flex: 1; min-height: 0; }
+
+  /* Sidebar */
+  .sidebar { width: 200px; min-width: 200px; border-right: 0.5px solid var(--border); padding: 14px 12px; display: flex; flex-direction: column; gap: 8px; background: var(--bg-secondary); }
+  .sidebar label { font-size: 11px; color: var(--text-secondary); font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 6px; }
+  .tool-btn { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: var(--radius-md); border: 0.5px solid var(--border); background: var(--bg-primary); cursor: pointer; font-size: 13px; color: var(--text-primary); width: 100%; font-family: var(--font); }
+  .tool-btn:hover { background: var(--bg-tertiary); }
+  .tool-btn.active { border-color: var(--text-primary); font-weight: 500; }
+  .tool-btn i { font-size: 16px; }
+  .color-row { display: flex; gap: 6px; flex-wrap: wrap; }
+  .color-dot { width: 22px; height: 22px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; flex-shrink: 0; }
+  .color-dot.selected { border-color: var(--text-primary); }
+  .font-select { width: 100%; font-size: 13px; padding: 6px 8px; border-radius: var(--radius-md); border: 0.5px solid var(--border); background: var(--bg-primary); color: var(--text-primary); font-family: var(--font); }
+
+  /* Canvas area */
+  .canvas-wrap { flex: 1; overflow: auto; background: #d1d5db; display: flex; align-items: flex-start; justify-content: center; padding: 24px; min-height: 480px; }
+  #doc-canvas { background: white; box-shadow: 0 2px 16px rgba(0,0,0,0.2); cursor: crosshair; display: block; max-width: 100%; }
+
+  /* Upload screen */
+  .upload-zone { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; padding: 60px 40px; min-height: 500px; }
+  .upload-box { border: 2px dashed var(--border-md); border-radius: var(--radius-lg); padding: 52px 40px; display: flex; flex-direction: column; align-items: center; gap: 14px; max-width: 440px; width: 100%; text-align: center; background: var(--bg-secondary); transition: border-color 0.2s, background 0.2s; cursor: pointer; }
+  .upload-box:hover, .upload-box.drag-over { border-color: var(--text-primary); background: var(--bg-tertiary); }
+  .upload-box i { font-size: 44px; color: var(--text-secondary); }
+  .upload-box p { font-size: 14px; color: var(--text-secondary); line-height: 1.6; }
+  .upload-box strong { font-size: 16px; color: var(--text-primary); }
+  #file-input { display: none; }
+  .note-box { max-width: 440px; background: var(--bg-secondary); border-left: 3px solid var(--border-md); border-radius: 0 var(--radius-md) var(--radius-md) 0; padding: 12px 16px; font-size: 13px; color: var(--text-secondary); line-height: 1.6; }
+  .note-box strong { color: var(--text-primary); }
+
+  /* Buttons */
+  .action-btn { padding: 8px 16px; border-radius: var(--radius-md); border: 0.5px solid var(--border-md); background: var(--bg-primary); cursor: pointer; font-size: 13px; color: var(--text-primary); display: inline-flex; align-items: center; gap: 6px; font-family: var(--font); white-space: nowrap; }
+  .action-btn:hover { background: var(--bg-secondary); }
+  .action-btn.primary { background: var(--text-primary); color: var(--bg-primary); border-color: var(--text-primary); }
+  .action-btn.primary:hover { opacity: 0.85; }
+  .action-btn.danger { color: #b91c1c; }
+  .action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* Signature modal */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 999; }
+  .modal-box { background: var(--bg-primary); border-radius: var(--radius-lg); padding: 24px; width: 440px; max-width: 95vw; border: 0.5px solid var(--border); }
+  .modal-box h3 { font-size: 15px; font-weight: 500; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+  #sig-canvas { border: 0.5px solid var(--border-md); border-radius: var(--radius-md); cursor: crosshair; background: white; display: block; width: 100%; height: 150px; }
+  .sig-hint { font-size: 12px; color: var(--text-secondary); margin-top: 6px; }
+  .modal-actions { display: flex; gap: 8px; margin-top: 14px; justify-content: flex-end; }
+
+  /* Docs list */
+  .docs-content { padding: 20px; display: flex; flex-direction: column; gap: 10px; }
+  .docs-content h2 { font-size: 15px; font-weight: 500; margin-bottom: 4px; }
+  .doc-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border: 0.5px solid var(--border); border-radius: var(--radius-lg); background: var(--bg-primary); }
+  .doc-icon { width: 38px; height: 38px; border-radius: var(--radius-md); background: var(--bg-secondary); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .doc-icon i { font-size: 20px; color: var(--text-secondary); }
+  .doc-info { flex: 1; min-width: 0; }
+  .doc-info strong { font-size: 14px; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .doc-info span { font-size: 12px; color: var(--text-secondary); }
+  .doc-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .empty-state { text-align: center; color: var(--text-secondary); padding: 80px 20px; font-size: 14px; line-height: 2; }
+  .empty-state i { font-size: 36px; display: block; margin-bottom: 10px; }
+
+  /* Loading spinner */
+  .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid currentColor; border-top-color: transparent; border-radius: 50%; animation: spin 0.6s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Toast */
+  #toast { position: fixed; bottom: 24px; right: 24px; background: var(--text-primary); color: var(--bg-primary); padding: 10px 18px; border-radius: var(--radius-md); font-size: 13px; display: none; z-index: 9999; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+  #toast.error { background: #b91c1c; }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div class="topbar">
+    <i class="ti ti-file-pencil" style="font-size:22px" aria-hidden="true"></i>
+    <h1>DocSign — Free Document Signer</h1>
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <span style="font-size: 13px; color: var(--text-secondary); display: flex; align-items: center; gap: 4px;">
+        <i class="ti ti-user" aria-hidden="true"></i>
+        {{ request.user.username }}
+      </span>
+      <a href="{% url 'logout' %}" class="action-btn danger" style="text-decoration: none; font-size: 13px; display: inline-flex; align-items: center; gap: 4px;">
+        <i class="ti ti-logout" aria-hidden="true"></i> Logout
+      </a>
+      <button class="action-btn" id="new-doc-btn"><i class="ti ti-plus" aria-hidden="true"></i> New document</button>
+    </div>
+  </div>
+  <div class="tab-bar">
+    <button class="tab active" data-tab="editor">Editor</button>
+    <button class="tab" data-tab="docs">My Documents</button>
+  </div>
+
+  <!-- ── EDITOR TAB ── -->
+  <div class="panel active" id="editor-panel">
+
+    <!-- Upload screen -->
+    <div id="upload-view" class="upload-zone">
+      <div class="upload-box" id="drop-zone">
+        <i class="ti ti-cloud-upload" aria-hidden="true"></i>
+        <strong>Upload your document</strong>
+        <p>Drag &amp; drop or click to browse<br>
+          <span style="font-size:12px">Supported: PDF, PNG, JPG, JPEG</span>
+        </p>
+        <button class="action-btn primary" type="button" id="browse-btn">
+          <i class="ti ti-folder-open" aria-hidden="true"></i> Choose file
+        </button>
+      </div>
+      <input type="file" id="file-input" accept=".pdf,.png,.jpg,.jpeg">
+      <div class="note-box">
+        <strong>Using a Word / DOCX file?</strong><br>
+        Open in Word or Google Docs → File → Save/Export as PDF — then upload the PDF here.
+      </div>
+    </div>
+
+    <!-- Editor screen -->
+    <div id="editor-view" style="display:none; flex:1; flex-direction:column">
+      <div class="editor-body">
+        <div class="sidebar">
+          <label>Tools</label>
+          <button class="tool-btn active" data-tool="text" type="button">
+            <i class="ti ti-text-size" aria-hidden="true"></i> Add text
+          </button>
+          <button class="tool-btn" data-tool="signature" type="button">
+            <i class="ti ti-writing" aria-hidden="true"></i> Signature
+          </button>
+          <button class="tool-btn" data-tool="date" type="button">
+            <i class="ti ti-calendar" aria-hidden="true"></i> Date stamp
+          </button>
+          <button class="tool-btn" data-tool="draw" type="button">
+            <i class="ti ti-pencil" aria-hidden="true"></i> Free draw
+          </button>
+          <button class="tool-btn" data-tool="erase" type="button">
+            <i class="ti ti-eraser" aria-hidden="true"></i> Eraser
+          </button>
+
+          <label style="margin-top:10px">Ink color</label>
+          <div class="color-row" id="color-row">
+            <div class="color-dot selected" data-color="#1a1a1a" style="background:#1a1a1a" title="Black"></div>
+            <div class="color-dot" data-color="#1d4ed8" style="background:#1d4ed8" title="Blue"></div>
+            <div class="color-dot" data-color="#b91c1c" style="background:#b91c1c" title="Red"></div>
+            <div class="color-dot" data-color="#166534" style="background:#166534" title="Green"></div>
+          </div>
+
+          <label style="margin-top:10px">Font size</label>
+          <select class="font-select" id="font-size">
+            <option value="12">12px</option>
+            <option value="14" selected>14px</option>
+            <option value="16">16px</option>
+            <option value="18">18px</option>
+            <option value="20">20px</option>
+            <option value="24">24px</option>
+            <option value="28">28px</option>
+          </select>
+
+          <div style="flex:1; min-height:16px"></div>
+
+          <button class="tool-btn" id="undo-btn" type="button">
+            <i class="ti ti-arrow-back-up" aria-hidden="true"></i> Undo
+          </button>
+          <button class="action-btn primary" id="save-btn" type="button" style="width:100%; justify-content:center; margin-top:6px">
+            <i class="ti ti-device-floppy" aria-hidden="true"></i> Save &amp; Download
+          </button>
+        </div>
+
+        <div class="canvas-wrap" id="canvas-wrap">
+          <canvas id="doc-canvas"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── DOCS TAB ── -->
+  <div class="panel" id="docs-panel">
+    <div class="docs-content">
+      <h2>My Documents</h2>
+      <div id="docs-list-inner">
+        <div class="empty-state" id="docs-empty" style="display:none">
+          <i class="ti ti-files" aria-hidden="true"></i>
+          No documents yet. Upload one in the Editor tab.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Signature modal -->
+<div class="modal-overlay" id="sig-modal" style="display:none" role="dialog" aria-modal="true" aria-label="Draw your signature">
+  <div class="modal-box">
+    <h3><i class="ti ti-writing" aria-hidden="true"></i> Draw your signature</h3>
+    <canvas id="sig-canvas" width="390" height="150"></canvas>
+    <p class="sig-hint">Draw using your mouse or finger</p>
+    <div class="modal-actions">
+      <button class="action-btn" id="sig-clear" type="button"><i class="ti ti-trash" aria-hidden="true"></i> Clear</button>
+      <button class="action-btn" id="sig-cancel" type="button">Cancel</button>
+      <button class="action-btn primary" id="sig-done" type="button"><i class="ti ti-check" aria-hidden="true"></i> Use signature</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  // ── CSRF helper (Django) ───────────────────────────────────────────────
+  function getCookie(name) {
+    const val = `; ${document.cookie}`;
+    const parts = val.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+    return '';
+  }
+
+  async function apiFetch(url, opts = {}) {
+    opts.headers = opts.headers || {};
+    opts.headers['X-CSRFToken'] = getCookie('csrftoken');
+    const res = await fetch(url, opts);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Server error' }));
+      throw new Error(err.error || 'Request failed');
+    }
+    return res.json();
+  }
+
+  // ── State ─────────────────────────────────────────────────────────────
+  let currentTool = 'text';
+  let currentColor = '#1a1a1a';
+  let fontSize = 14;
+  let layers = [];
+  let baseImageData = null;
+  let isDrawing = false;
+  let drawPath = [];
+  let sigData = null;
+  let pendingSignaturePlacement = false;
+  let docCanvas, ctx, docW, docH;
+  let currentDocId = null;
+
+  pdfjsLib.GlobalWorkerOptions.workerSrc =
+    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+  // ── Toast ──────────────────────────────────────────────────────────────
+  let toastTimer;
+  function showToast(msg, isError = false) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = isError ? 'error' : '';
+    t.style.display = 'block';
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { t.style.display = 'none'; }, 2800);
+  }
+
+  // ── Tabs ───────────────────────────────────────────────────────────────
+  function switchTab(name) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+    document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === name + '-panel'));
+    if (name === 'docs') loadDocsList();
+  }
+  document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => switchTab(t.dataset.tab)));
+
+  // ── New doc ────────────────────────────────────────────────────────────
+  document.getElementById('new-doc-btn').addEventListener('click', () => {
+    document.getElementById('editor-view').style.display = 'none';
+    document.getElementById('upload-view').style.display = 'flex';
+    layers = []; baseImageData = null; sigData = null;
+    currentDocId = null; pendingSignaturePlacement = false;
+    switchTab('editor');
+  });
+
+  // ── Tool selection ─────────────────────────────────────────────────────
+  function setTool(name) {
+    currentTool = name;
+    document.querySelectorAll('.tool-btn[data-tool]').forEach(b =>
+      b.classList.toggle('active', b.dataset.tool === name));
+    if (docCanvas) {
+      docCanvas.style.cursor = name === 'erase' ? 'cell' : name === 'draw' ? 'crosshair' : 'default';
+    }
+    if (name === 'signature') {
+      document.getElementById('sig-modal').style.display = 'flex';
+    }
+  }
+  document.querySelectorAll('.tool-btn[data-tool]').forEach(b =>
+    b.addEventListener('click', () => setTool(b.dataset.tool)));
+
+  // ── Color ──────────────────────────────────────────────────────────────
+  document.querySelectorAll('.color-dot').forEach(d => {
+    d.addEventListener('click', () => {
+      document.querySelectorAll('.color-dot').forEach(x => x.classList.remove('selected'));
+      d.classList.add('selected');
+      currentColor = d.dataset.color;
+    });
+  });
+
+  // ── Font size ──────────────────────────────────────────────────────────
+  document.getElementById('font-size').addEventListener('change', function () {
+    fontSize = parseInt(this.value);
+  });
+
+  // ── Undo ───────────────────────────────────────────────────────────────
+  document.getElementById('undo-btn').addEventListener('click', () => {
+    if (layers.length > 0) { layers.pop(); redrawCanvas(); }
+    else showToast('Nothing to undo');
+  });
+
+  // ── Canvas setup ───────────────────────────────────────────────────────
+  function setupCanvas() {
+    docCanvas = document.getElementById('doc-canvas');
+    docCanvas.width = docW;
+    docCanvas.height = docH;
+    ctx = docCanvas.getContext('2d');
+    docCanvas.style.cursor = 'default';
+    docCanvas.addEventListener('mousedown', onDown);
+    docCanvas.addEventListener('mousemove', onMove);
+    docCanvas.addEventListener('mouseup', onUp);
+    docCanvas.addEventListener('touchstart', e => { e.preventDefault(); const t = e.touches[0]; onDown({ clientX: t.clientX, clientY: t.clientY }); }, { passive: false });
+    docCanvas.addEventListener('touchmove', e => { e.preventDefault(); const t = e.touches[0]; onMove({ clientX: t.clientX, clientY: t.clientY }); }, { passive: false });
+    docCanvas.addEventListener('touchend', e => { e.preventDefault(); onUp(); }, { passive: false });
+  }
+
+  // ── Redraw ─────────────────────────────────────────────────────────────
+  function redrawCanvas() {
+    if (!ctx) return;
+    ctx.clearRect(0, 0, docW, docH);
+    if (baseImageData) ctx.putImageData(baseImageData, 0, 0);
+    layers.forEach(drawLayer);
+  }
+
+  function drawLayer(l) {
+    if (l.type === 'text') {
+      ctx.font = `${l.size}px -apple-system, sans-serif`;
+      ctx.fillStyle = l.color;
+      ctx.fillText(l.text, l.x, l.y);
+    } else if (l.type === 'signature') {
+      const img = new Image();
+      img.onload = () => ctx.drawImage(img, l.x, l.y, l.w, l.h);
+      img.src = l.src;
+    } else if (l.type === 'draw') {
+      ctx.save();
+      ctx.strokeStyle = l.color;
+      ctx.lineWidth = l.eraser ? 24 : 2;
+      ctx.globalCompositeOperation = l.eraser ? 'destination-out' : 'source-over';
+      ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      ctx.beginPath();
+      l.points.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  // ── Canvas events ──────────────────────────────────────────────────────
+  function getPos(e) {
+    const r = docCanvas.getBoundingClientRect();
+    return {
+      x: (e.clientX - r.left) * (docCanvas.width / r.width),
+      y: (e.clientY - r.top) * (docCanvas.height / r.height)
+    };
+  }
+
+  function onDown(e) {
+    const pos = getPos(e);
+    if (currentTool === 'text') {
+      const txt = prompt('Enter text:');
+      if (txt && txt.trim()) {
+        layers.push({ type: 'text', text: txt, x: pos.x, y: pos.y, size: fontSize, color: currentColor });
+        redrawCanvas();
+      }
+    } else if (currentTool === 'date') {
+      const d = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
+      layers.push({ type: 'text', text: d, x: pos.x, y: pos.y, size: fontSize, color: currentColor });
+      redrawCanvas();
+    } else if (currentTool === 'signature' && pendingSignaturePlacement && sigData) {
+      layers.push({ type: 'signature', src: sigData, x: pos.x - 90, y: pos.y - 35, w: 180, h: 70 });
+      pendingSignaturePlacement = false;
+      docCanvas.style.cursor = 'default';
+      redrawCanvas();
+    } else if (currentTool === 'draw' || currentTool === 'erase') {
+      isDrawing = true;
+      drawPath = [pos];
+    }
+  }
+
+  function onMove(e) {
+    if (!isDrawing) return;
+    const pos = getPos(e);
+    drawPath.push(pos);
+    redrawCanvas();
+    ctx.save();
+    ctx.strokeStyle = currentTool === 'erase' ? 'rgba(0,0,0,1)' : currentColor;
+    ctx.lineWidth = currentTool === 'erase' ? 24 : 2;
+    ctx.globalCompositeOperation = currentTool === 'erase' ? 'destination-out' : 'source-over';
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.beginPath();
+    drawPath.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function onUp() {
+    if (!isDrawing) return;
+    isDrawing = false;
+    if (drawPath.length > 1) {
+      layers.push({ type: 'draw', points: drawPath.slice(), color: currentColor, eraser: currentTool === 'erase' });
+      redrawCanvas();
+    }
+    drawPath = [];
+  }
+
+  // ── Load PDF ───────────────────────────────────────────────────────────
+  async function loadPDF(url) {
+    const pdf = await pdfjsLib.getDocument(url).promise;
+    const page = await pdf.getPage(1);
+    const vp = page.getViewport({ scale: 1.6 });
+    docW = Math.round(vp.width); docH = Math.round(vp.height);
+    setupCanvas();
+    await page.render({ canvasContext: ctx, viewport: vp }).promise;
+    baseImageData = ctx.getImageData(0, 0, docW, docH);
+    layers = [];
+  }
+
+  // ── Load image ─────────────────────────────────────────────────────────
+  function loadImageURL(url) {
+    return new Promise(resolve => {
+      const img = new Image();
+      img.onload = () => {
+        const maxW = 900;
+        const scale = img.width > maxW ? maxW / img.width : 1;
+        docW = Math.round(img.width * scale);
+        docH = Math.round(img.height * scale);
+        setupCanvas();
+        ctx.drawImage(img, 0, 0, docW, docH);
+        baseImageData = ctx.getImageData(0, 0, docW, docH);
+        layers = [];
+        resolve();
+      };
+      img.src = url;
+    });
+  }
+
+  // ── File upload → Django ───────────────────────────────────────────────
+  async function uploadFile(file) {
+    const formData = new FormData();
+    formData.append('file', file);
+    const data = await apiFetch('/api/documents/upload/', {
+      method: 'POST',
+      body: formData,
+    });
+    return data.document;
+  }
+
+  // ── File input ─────────────────────────────────────────────────────────
+  document.getElementById('browse-btn').addEventListener('click', () => {
+    document.getElementById('file-input').click();
+  });
+
+  document.getElementById('file-input').addEventListener('change', async function () {
+    const file = this.files[0];
+    if (!file) return;
+    await handleFileUpload(file);
+    this.value = '';
+  });
+
+  async function handleFileUpload(file) {
+    showToast('Uploading...');
+    try {
+      const doc = await uploadFile(file);
+      currentDocId = doc.id;
+      showEditorView();
+      showToast('Loading document...');
+      if (file.type === 'application/pdf') {
+        await loadPDF(doc.original_url);
+      } else {
+        await loadImageURL(doc.original_url);
+      }
+      showToast('Document ready — choose a tool to start editing');
+    } catch (err) {
+      showToast(err.message, true);
+    }
+  }
+
+  // ── Drag & drop ────────────────────────────────────────────────────────
+  const dropZone = document.getElementById('drop-zone');
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+  dropZone.addEventListener('drop', async e => {
+    e.preventDefault(); dropZone.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file) await handleFileUpload(file);
+  });
+
+  function showEditorView() {
+    document.getElementById('upload-view').style.display = 'none';
+    const ev = document.getElementById('editor-view');
+    ev.style.display = 'flex';
+  }
+
+  // ── Signature pad ──────────────────────────────────────────────────────
+  const sigCanvas = document.getElementById('sig-canvas');
+  const sigCtx = sigCanvas.getContext('2d');
+  let sigDrawing = false, sigPts = [];
+
+  sigCanvas.addEventListener('mousedown', e => {
+    sigDrawing = true;
+    const r = sigCanvas.getBoundingClientRect();
+    sigPts = [[e.clientX - r.left, e.clientY - r.top]];
+  });
+  sigCanvas.addEventListener('mousemove', e => {
+    if (!sigDrawing) return;
+    const r = sigCanvas.getBoundingClientRect();
+    sigPts.push([e.clientX - r.left, e.clientY - r.top]);
+    sigCtx.clearRect(0, 0, sigCanvas.width, sigCanvas.height);
+    sigCtx.strokeStyle = '#1a1a1a'; sigCtx.lineWidth = 2.5;
+    sigCtx.lineCap = 'round'; sigCtx.lineJoin = 'round';
+    sigCtx.beginPath();
+    sigPts.forEach((p, i) => i === 0 ? sigCtx.moveTo(p[0], p[1]) : sigCtx.lineTo(p[0], p[1]));
+    sigCtx.stroke();
+  });
+  sigCanvas.addEventListener('mouseup', () => { sigDrawing = false; });
+  sigCanvas.addEventListener('touchstart', e => { e.preventDefault(); const t = e.touches[0]; sigCanvas.dispatchEvent(new MouseEvent('mousedown', { clientX: t.clientX, clientY: t.clientY })); });
+  sigCanvas.addEventListener('touchmove', e => { e.preventDefault(); const t = e.touches[0]; sigCanvas.dispatchEvent(new MouseEvent('mousemove', { clientX: t.clientX, clientY: t.clientY })); });
+  sigCanvas.addEventListener('touchend', e => { e.preventDefault(); sigCanvas.dispatchEvent(new MouseEvent('mouseup', {})); });
+
+  document.getElementById('sig-clear').addEventListener('click', () => {
+    sigCtx.clearRect(0, 0, sigCanvas.width, sigCanvas.height); sigPts = [];
+  });
+  document.getElementById('sig-cancel').addEventListener('click', () => {
+    document.getElementById('sig-modal').style.display = 'none'; setTool('text');
+  });
+  document.getElementById('sig-done').addEventListener('click', () => {
+    if (sigPts.length < 2) { showToast('Please draw your signature first'); return; }
+    sigData = sigCanvas.toDataURL();
+    document.getElementById('sig-modal').style.display = 'none';
+    pendingSignaturePlacement = true;
+    docCanvas.style.cursor = 'copy';
+    showToast('Click on the document to place your signature');
+  });
+
+  // ── Save & Download → Django ───────────────────────────────────────────
+  document.getElementById('save-btn').addEventListener('click', async () => {
+    if (!docCanvas || !currentDocId) { showToast('No document loaded', true); return; }
+    const btn = document.getElementById('save-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Saving...';
+    try {
+      const imageData = docCanvas.toDataURL('image/png');
+      const data = await apiFetch(`/api/documents/${currentDocId}/save/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: imageData }),
+      });
+      // Trigger browser download
+      const a = document.createElement('a');
+      a.href = data.document.signed_url;
+      a.download = data.document.name;
+      a.click();
+      showToast('Saved & downloaded!');
+    } catch (err) {
+      showToast(err.message, true);
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="ti ti-device-floppy" aria-hidden="true"></i> Save &amp; Download';
+    }
+  });
+
+  // ── Docs list ──────────────────────────────────────────────────────────
+  async function loadDocsList() {
+    const inner = document.getElementById('docs-list-inner');
+    inner.innerHTML = '<div class="empty-state"><span class="spinner"></span></div>';
+    try {
+      const data = await apiFetch('/api/documents/');
+      renderDocsList(data.documents);
+    } catch (err) {
+      inner.innerHTML = `<div class="empty-state">${err.message}</div>`;
+    }
+  }
+
+  function renderDocsList(docs) {
+    const inner = document.getElementById('docs-list-inner');
+    inner.innerHTML = '';
+    if (docs.length === 0) {
+      inner.innerHTML = `<div class="empty-state"><i class="ti ti-files" aria-hidden="true"></i><br>No documents yet. Upload one in the Editor tab.</div>`;
+      return;
+    }
+    docs.forEach(d => {
+      const el = document.createElement('div');
+      el.className = 'doc-item';
+      el.innerHTML = `
+        <div class="doc-icon"><i class="ti ti-file-description" aria-hidden="true"></i></div>
+        <div class="doc-info">
+          <strong>${escHtml(d.name)}</strong>
+          <span>Saved ${escHtml(d.updated_at)}</span>
+        </div>
+        <div class="doc-actions">
+          ${d.original_url ? `<button class="action-btn" data-open-id="${d.id}" data-url="${escHtml(d.original_url)}" data-type="${d.original_url.endsWith('.pdf') ? 'pdf' : 'img'}" type="button"><i class="ti ti-edit" aria-hidden="true"></i> Edit</button>` : ''}
+          ${d.signed_url ? `<a class="action-btn" href="${escHtml(d.signed_url)}" download="${escHtml(d.name)}" title="Download signed"><i class="ti ti-download" aria-hidden="true"></i></a>` : ''}
+          <button class="action-btn danger" data-del-id="${d.id}" type="button" title="Delete"><i class="ti ti-trash" aria-hidden="true"></i></button>
+        </div>`;
+      inner.appendChild(el);
+    });
+  }
+
+  document.getElementById('docs-list-inner').addEventListener('click', async e => {
+    const openBtn = e.target.closest('[data-open-id]');
+    const delBtn  = e.target.closest('[data-del-id]');
+
+    if (openBtn) {
+      const id = openBtn.dataset.openId;
+      const url = openBtn.dataset.url;
+      const type = openBtn.dataset.type;
+      currentDocId = id;
+      switchTab('editor');
+      showEditorView();
+      showToast('Loading document...');
+      try {
+        if (type === 'pdf') await loadPDF(url);
+        else await loadImageURL(url);
+        showToast('Document ready');
+      } catch (err) { showToast(err.message, true); }
+    }
+
+    if (delBtn) {
+      if (!confirm('Delete this document and its files?')) return;
+      try {
+        await apiFetch(`/api/documents/${delBtn.dataset.delId}/delete/`, { method: 'DELETE' });
+        showToast('Document deleted');
+        loadDocsList();
+      } catch (err) { showToast(err.message, true); }
+    }
+  });
+
+  function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+})();
+</script>
+</body>
+</html>
