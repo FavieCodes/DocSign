@@ -48,8 +48,8 @@ Follow these steps to get DocSign running on your local machine.
 ### 1. Clone & Environment Setup
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/docsign.git
-cd docsign
+git clone https://github.com/FavieCodes/DocSign.git
+cd DocSign
 
 # Create and activate a virtual environment
 python -m venv venv
