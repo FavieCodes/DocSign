@@ -71,6 +71,39 @@
             align-items: center;
         }
 
+        /* Hamburger Menu */
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            gap: 5px;
+            cursor: pointer;
+            background: none;
+            border: none;
+            padding: 4px;
+            z-index: 1001;
+        }
+
+        .hamburger span {
+            display: block;
+            width: 24px;
+            height: 2px;
+            background: var(--text-main);
+            border-radius: 2px;
+            transition: all 0.3s ease;
+        }
+
+        .hamburger.active span:nth-child(1) {
+            transform: rotate(45deg) translate(5px, 5px);
+        }
+
+        .hamburger.active span:nth-child(2) {
+            opacity: 0;
+        }
+
+        .hamburger.active span:nth-child(3) {
+            transform: rotate(-45deg) translate(5px, -5px);
+        }
+
         .btn {
             display: inline-block;
             padding: 0.75rem 1.5rem;
@@ -401,7 +434,32 @@
 
         /* Responsive Design */
         @media (max-width: 768px) {
-            .nav-links { display: none; }
+            .hamburger { display: flex; }
+            .nav-links {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(15, 23, 42, 0.97);
+                backdrop-filter: blur(16px);
+                -webkit-backdrop-filter: blur(16px);
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                gap: 2rem;
+                z-index: 1000;
+            }
+            .nav-links.open {
+                display: flex;
+            }
+            .nav-links .btn {
+                font-size: 1.2rem;
+                padding: 1rem 2.5rem;
+                min-width: 220px;
+                text-align: center;
+            }
             .hero-cta { flex-direction: column; width: 100%; max-width: 300px; }
             .hero-cta .btn { width: 100%; text-align: center; }
             .step, .step:nth-child(even) { flex-direction: column; gap: 2rem; text-align: center; }
@@ -417,7 +475,12 @@
             <i class="ti ti-file-signature"></i>
             DocSign
         </a>
-        <div class="nav-links">
+        <button class="hamburger" id="hamburger-btn" aria-label="Toggle menu">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+        <div class="nav-links" id="nav-links">
             <a href="{% url 'login' %}" class="btn btn-outline">Log in</a>
             <a href="{% url 'signup' %}" class="btn btn-primary">Sign up free</a>
         </div>
@@ -541,5 +604,22 @@
         <p>&copy; 2026 DocSign Inc. All rights reserved. Built for secure signing.</p>
     </footer>
 
+    <script>
+        const hamburger = document.getElementById('hamburger-btn');
+        const navLinks = document.getElementById('nav-links');
+
+        hamburger.addEventListener('click', () => {
+            hamburger.classList.toggle('active');
+            navLinks.classList.toggle('open');
+        });
+
+        // Close menu when a link is clicked
+        navLinks.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', () => {
+                hamburger.classList.remove('active');
+                navLinks.classList.remove('open');
+            });
+        });
+    </script>
 </body>
 </html>
