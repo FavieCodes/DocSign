@@ -7,6 +7,9 @@ from django.views.decorators.http import require_http_methods
 from django.core.files.base import ContentFile
 from django.contrib.auth.decorators import login_required
 from .models import Document
+import logging
+
+logger = logging.getLogger('signer')
 
 
 def landing_page(request):
@@ -52,12 +55,17 @@ def upload_document(request):
     if file.content_type not in allowed_types:
         return JsonResponse({'error': 'Unsupported file type. Use PDF, PNG, or JPG.'}, status=400)
 
-    doc = Document.objects.create(
-        name=file.name,
-        original_file=file,
-        user=request.user
-    )
-    return JsonResponse({'document': doc.to_dict()}, status=201)
+    try:
+        doc = Document.objects.create(
+            name=file.name,
+            original_file=file,
+            user=request.user
+        )
+        logger.info(f"Successfully uploaded document '{doc.name}' to Cloudinary for user {request.user.username}.")
+        return JsonResponse({'document': doc.to_dict()}, status=201)
+    except Exception as e:
+        logger.error(f"Failed to upload document to Cloudinary: {str(e)}", exc_info=True)
+        return JsonResponse({'error': 'Failed to upload document to cloud storage'}, status=500)
 
 
 @require_http_methods(["POST"])
@@ -87,8 +95,13 @@ def save_signed(request, doc_id):
     if doc.signed_file:
         doc.signed_file.delete(save=False)
 
-    doc.signed_file.save(filename, ContentFile(image_bytes), save=True)
-    return JsonResponse({'document': doc.to_dict()})
+    try:
+        doc.signed_file.save(filename, ContentFile(image_bytes), save=True)
+        logger.info(f"Successfully saved signed document '{doc.name}' to Cloudinary for user {request.user.username}.")
+        return JsonResponse({'document': doc.to_dict()})
+    except Exception as e:
+        logger.error(f"Failed to save signed document to Cloudinary: {str(e)}", exc_info=True)
+        return JsonResponse({'error': 'Failed to save signed document to cloud storage'}, status=500)
 
 
 @require_http_methods(["DELETE"])
@@ -104,8 +117,13 @@ def delete_document(request, doc_id):
         if field:
             try:
                 field.delete(save=False)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.error(f"Error deleting file from Cloudinary: {str(e)}", exc_info=True)
 
-    doc.delete()
-    return JsonResponse({'success': True})
+    try:
+        doc.delete()
+        logger.info(f"Successfully deleted document {doc_id} for user {request.user.username}.")
+        return JsonResponse({'success': True})
+    except Exception as e:
+        logger.error(f"Failed to delete document from database: {str(e)}", exc_info=True)
+        return JsonResponse({'error': 'Failed to delete document'}, status=500)
