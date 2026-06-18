@@ -85,12 +85,7 @@ def save_signed(request, doc_id):
 
     # Replace old signed file if it exists
     if doc.signed_file:
-        try:
-            old_path = doc.signed_file.path
-            if os.path.exists(old_path):
-                os.remove(old_path)
-        except Exception:
-            pass
+        doc.signed_file.delete(save=False)
 
     doc.signed_file.save(filename, ContentFile(image_bytes), save=True)
     return JsonResponse({'document': doc.to_dict()})
@@ -104,12 +99,11 @@ def delete_document(request, doc_id):
 
     doc = get_object_or_404(Document, id=doc_id, user=request.user)
 
-    # Remove files from disk
+    # Remove files from storage
     for field in [doc.original_file, doc.signed_file]:
         if field:
             try:
-                if os.path.exists(field.path):
-                    os.remove(field.path)
+                field.delete(save=False)
             except Exception:
                 pass
 
